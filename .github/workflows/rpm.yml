@@ -18,8 +18,8 @@ jobs:
           repo: cli
           tag: latest
           file: .*.rpm
-      - name: install createrepo
-        run: sudo apt-get install -y createrepo
+      - name: install createrepo, rpm
+        run: sudo apt-get install -y createrepo rpm
       - name: set up gpg
         run: |
           echo "Importing pubkey..."
@@ -34,6 +34,10 @@ jobs:
           echo "allow-preset-passphrase" > ~/.gnupg/gpg-agent.conf
           gpg-connect-agent RELOADAGENT /bye
           echo ${{secrets.GPG_PASSPHRASE}} | /usr/lib/gnupg2/gpg-preset-passphrase --preset 867DAD5051270B843EF54F6186FA10E3A1D22DC5
+      - name: Sign RPMs
+        run: |
+          cp script/rpmmacros ~/.rpmmacros
+          rpmsign --addsign *.rpm
       - name: Checkout pages site
         uses: actions/checkout@v2
         with:
