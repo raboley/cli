@@ -122,7 +122,7 @@ jobs:
           GIT_AUTHOR_EMAIL: noreply@github.com
         run: |
           git -C site add packages
-          git -C site commit -m"${GITHUB_REF} packages"
+          git -C site commit -m"${GITHUB_REF} deb packages"
           git -C site push
   msi:
     needs: goreleaser

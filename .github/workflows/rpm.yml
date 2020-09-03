@@ -1,0 +1,60 @@
+name: rpm
+
+on:
+  push:
+    tags:
+      - "repos-rc*"
+
+jobs:
+  rpm:
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Get package artifacts
+        uses: i3h/download-release-asset@v1
+        with:
+          owner: cli
+          repo: cli
+          tag: latest
+          file: .*.rpm
+      - name: install createrepo
+        run: sudo apt-get install -y createrepo 
+      - name: set up gpg
+        run: |
+          echo "Importing pubkey..."
+          cat script/pubkey.asc | gpg --import --no-tty --batch --yes
+          echo "Importing seckey..."
+          echo ${{secrets.GPG_KEY}} | base64 -d | gpg --import --no-tty --batch --yes
+          #echo "Listing public keys..."
+          #gpg --list-keys --with-keygrip
+          #echo "Listing secret keys..."
+          #gpg --list-secret-keys
+          echo "Resetting gpg-agent and ingesting passphrase"
+          echo "allow-preset-passphrase" > ~/.gnupg/gpg-agent.conf
+          gpg-connect-agent RELOADAGENT /bye
+          echo ${{secrets.GPG_PASSPHRASE}} | /usr/lib/gnupg2/gpg-preset-passphrase --preset 867DAD5051270B843EF54F6186FA10E3A1D22DC5
+      - name: run createrepo
+        run: |
+          mkdir -p upload/rpm
+          cp *.rpm upload/rpm
+          createrepo upload/rpm
+          cd upload/rpm && gpg --detach-sign --armor repodata/repomod.xml
+      - name: Checkout pages site
+        uses: actions/checkout@v2
+        with:
+          repository: github/cli.github.com
+          path: site
+          fetch-depth: 0
+          token: ${{secrets.SITE_GITHUB_TOKEN}}
+      - name: add files to site
+        run: cp -a upload/rpm/* site/packages/rpm/
+      - name: publish site
+        env:
+          GIT_COMMITTER_NAME: cli automation
+          GIT_AUTHOR_NAME: cli automation
+          GIT_COMMITTER_EMAIL: noreply@github.com
+          GIT_AUTHOR_EMAIL: noreply@github.com
+        run: |
+          git -C site add packages
+          git -C site commit -m"${GITHUB_REF} rpm packages"
+          git -C site push
