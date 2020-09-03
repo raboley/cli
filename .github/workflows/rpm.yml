@@ -45,7 +45,7 @@ jobs:
         run: |
           cp *.rpm site/packages/rpm/
           createrepo site/packages/rpm
-          cd site/packages/rpm/ && gpg --detach-sign --armor repodata/repomod.xml
+          cd site/packages/rpm && gpg --detach-sign --armor repodata/repomd.xml
           cd ../../../
       - name: publish site
         env:
