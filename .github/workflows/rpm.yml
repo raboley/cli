@@ -44,8 +44,9 @@ jobs:
       - name: run createrepo
         run: |
           cp *.rpm site/packages/rpm/
-          createrepo site/package/rpm
+          createrepo site/packages/rpm
           cd site/packages/rpm/ && gpg --detach-sign --armor repodata/repomod.xml
+          cd ../../../
       - name: publish site
         env:
           GIT_COMMITTER_NAME: cli automation
