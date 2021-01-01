@@ -1,4 +1,4 @@
-package view
+package secret
 
 import (
 	"encoding/base64"

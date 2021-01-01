@@ -1,4 +1,4 @@
-package view
+package secret
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type ViewOptions struct {
+type SecretOptions struct {
 	HttpClient func() (*http.Client, error)
 	IO         *iostreams.IOStreams
 	BaseRepo   func() (ghrepo.Interface, error)
@@ -25,16 +25,16 @@ type ViewOptions struct {
 	Web     bool
 }
 
-func NewCmdView(f *cmdutil.Factory, runF func(*ViewOptions) error) *cobra.Command {
-	opts := ViewOptions{
+func NewCmdSecret(f *cmdutil.Factory, runF func(*SecretOptions) error) *cobra.Command {
+	opts := SecretOptions{
 		IO:         f.IOStreams,
 		HttpClient: f.HttpClient,
 		BaseRepo:   f.BaseRepo,
 	}
 
 	cmd := &cobra.Command{
-		Use:   "view [<repository>]",
-		Short: "View a repository",
+		Use:   "secret [<repository>]",
+		Short: "Secret a repository",
 		Long: `Display the description and the README of a GitHub repository.
 
 With no argument, the repository for the current directory is displayed.
@@ -48,7 +48,7 @@ With '--web', open the repository in a web browser instead.`,
 			if runF != nil {
 				return runF(&opts)
 			}
-			return viewRun(&opts)
+			return secretRun(&opts)
 		},
 	}
 
@@ -57,42 +57,42 @@ With '--web', open the repository in a web browser instead.`,
 	return cmd
 }
 
-func viewRun(opts *ViewOptions) error {
+func secretRun(opts *SecretOptions) error {
 	httpClient, err := opts.HttpClient()
 	if err != nil {
 		return err
 	}
 
-	var toView ghrepo.Interface
+	var toSecret ghrepo.Interface
 	apiClient := api.NewClientFromHTTP(httpClient)
 	if opts.RepoArg == "" {
 		var err error
-		toView, err = opts.BaseRepo()
+		toSecret, err = opts.BaseRepo()
 		if err != nil {
 			return err
 		}
 	} else {
 		var err error
-		viewURL := opts.RepoArg
-		if !strings.Contains(viewURL, "/") {
+		secretURL := opts.RepoArg
+		if !strings.Contains(secretURL, "/") {
 			currentUser, err := api.CurrentLoginName(apiClient, ghinstance.Default())
 			if err != nil {
 				return err
 			}
-			viewURL = currentUser + "/" + viewURL
+			secretURL = currentUser + "/" + secretURL
 		}
-		toView, err = ghrepo.FromFullName(viewURL)
+		toSecret, err = ghrepo.FromFullName(secretURL)
 		if err != nil {
 			return fmt.Errorf("argument error: %w", err)
 		}
 	}
 
-	repo, err := api.GitHubRepo(apiClient, toView)
+	repo, err := api.GitHubRepo(apiClient, toSecret)
 	if err != nil {
 		return err
 	}
 
-	openURL := ghrepo.GenerateRepoURL(toView, "")
+	openURL := ghrepo.GenerateRepoURL(toSecret, "")
 	if opts.Web {
 		if opts.IO.IsStdoutTTY() {
 			fmt.Fprintf(opts.IO.ErrOut, "Opening %s in your browser.\n", utils.DisplayURL(openURL))
@@ -100,9 +100,9 @@ func viewRun(opts *ViewOptions) error {
 		return utils.OpenInBrowser(openURL)
 	}
 
-	fullName := ghrepo.FullName(toView)
+	fullName := ghrepo.FullName(toSecret)
 
-	readme, err := RepositoryReadme(httpClient, toView)
+	readme, err := RepositoryReadme(httpClient, toSecret)
 	if err != nil && err != NotFoundError {
 		return err
 	}
@@ -127,7 +127,7 @@ func viewRun(opts *ViewOptions) error {
 		
 		{{.Readme}}
 		
-		{{.View}}
+		{{.Secret}}
 	`)
 
 	tmpl, err := template.New("repo").Parse(repoTmpl)
@@ -157,12 +157,12 @@ func viewRun(opts *ViewOptions) error {
 		FullName    string
 		Description string
 		Readme      string
-		View        string
+		Secret        string
 	}{
 		FullName:    utils.Bold(fullName),
 		Description: description,
 		Readme:      readmeContent,
-		View:        utils.Gray(fmt.Sprintf("View this repository on GitHub: %s", openURL)),
+		Secret:        utils.Gray(fmt.Sprintf("Secret this repository on GitHub: %s", openURL)),
 	}
 
 	err = tmpl.Execute(stdout, repoData)

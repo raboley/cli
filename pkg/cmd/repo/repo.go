@@ -7,6 +7,7 @@ import (
 	creditsCmd "github.com/cli/cli/pkg/cmd/repo/credits"
 	repoForkCmd "github.com/cli/cli/pkg/cmd/repo/fork"
 	repoViewCmd "github.com/cli/cli/pkg/cmd/repo/view"
+	repoSecretCmd "github.com/cli/cli/pkg/cmd/repo/secret"
 	"github.com/cli/cli/pkg/cmdutil"
 	"github.com/spf13/cobra"
 )
@@ -20,6 +21,7 @@ func NewCmdRepo(f *cmdutil.Factory) *cobra.Command {
 			$ gh repo create
 			$ gh repo clone cli/cli
 			$ gh repo view --web
+			$ gh repo secret
 		`),
 		Annotations: map[string]string{
 			"IsCore": "true",
@@ -36,6 +38,7 @@ func NewCmdRepo(f *cmdutil.Factory) *cobra.Command {
 	cmd.AddCommand(repoCloneCmd.NewCmdClone(f, nil))
 	cmd.AddCommand(repoCreateCmd.NewCmdCreate(f, nil))
 	cmd.AddCommand(creditsCmd.NewCmdRepoCredits(f, nil))
+	cmd.AddCommand(repoSecretCmd.NewCmdSecret(f, nil))
 
 	return cmd
 }

@@ -1,4 +1,4 @@
-package view
+package secret
 
 import (
 	"bytes"
@@ -16,17 +16,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewCmdView(t *testing.T) {
+func TestNewCmdSecret(t *testing.T) {
 	tests := []struct {
 		name     string
 		cli      string
-		wants    ViewOptions
+		wants    SecretOptions
 		wantsErr bool
 	}{
 		{
 			name: "no args",
 			cli:  "",
-			wants: ViewOptions{
+			wants: SecretOptions{
 				RepoArg: "",
 				Web:     false,
 			},
@@ -34,7 +34,7 @@ func TestNewCmdView(t *testing.T) {
 		{
 			name: "sets repo arg",
 			cli:  "some/repo",
-			wants: ViewOptions{
+			wants: SecretOptions{
 				RepoArg: "some/repo",
 				Web:     false,
 			},
@@ -42,7 +42,7 @@ func TestNewCmdView(t *testing.T) {
 		{
 			name: "sets web",
 			cli:  "-w",
-			wants: ViewOptions{
+			wants: SecretOptions{
 				RepoArg: "",
 				Web:     true,
 			},
@@ -62,8 +62,8 @@ func TestNewCmdView(t *testing.T) {
 			argv, err := shlex.Split(tt.cli)
 			assert.NoError(t, err)
 
-			var gotOpts *ViewOptions
-			cmd := NewCmdView(f, func(opts *ViewOptions) error {
+			var gotOpts *SecretOptions
+			cmd := NewCmdSecret(f, func(opts *SecretOptions) error {
 				gotOpts = opts
 				return nil
 			})
@@ -85,7 +85,7 @@ func TestNewCmdView(t *testing.T) {
 	}
 }
 
-func Test_RepoView_Web(t *testing.T) {
+func Test_RepoSecret_Web(t *testing.T) {
 	tests := []struct {
 		name       string
 		stdoutTTY  bool
@@ -108,7 +108,7 @@ func Test_RepoView_Web(t *testing.T) {
 			httpmock.GraphQL(`query RepositoryInfo\b`),
 			httpmock.StringResponse(`{}`))
 
-		opts := &ViewOptions{
+		opts := &SecretOptions{
 			Web: true,
 			HttpClient: func() (*http.Client, error) {
 				return &http.Client{Transport: reg}, nil
@@ -130,8 +130,8 @@ func Test_RepoView_Web(t *testing.T) {
 
 			cs.Stub("") // browser open
 
-			if err := viewRun(opts); err != nil {
-				t.Errorf("viewRun() error = %v", err)
+			if err := secretRun(opts); err != nil {
+				t.Errorf("secretRun() error = %v", err)
 			}
 			assert.Equal(t, "", stdout.String())
 			assert.Equal(t, 1, len(cs.Calls))
@@ -143,10 +143,10 @@ func Test_RepoView_Web(t *testing.T) {
 	}
 }
 
-func Test_ViewRun(t *testing.T) {
+func Test_SecretRun(t *testing.T) {
 	tests := []struct {
 		name       string
-		opts       *ViewOptions
+		opts       *SecretOptions
 		repoName   string
 		stdoutTTY  bool
 		wantOut    string
@@ -165,7 +165,7 @@ func Test_ViewRun(t *testing.T) {
 		{
 			name:     "url arg",
 			repoName: "jill/valentine",
-			opts: &ViewOptions{
+			opts: &SecretOptions{
 				RepoArg: "https://github.com/jill/valentine",
 			},
 			stdoutTTY: true,
@@ -178,13 +178,13 @@ func Test_ViewRun(t *testing.T) {
 
 
 
-				View this repository on GitHub: https://github.com/jill/valentine
+				Secret this repository on GitHub: https://github.com/jill/valentine
 			`),
 		},
 		{
 			name:     "name arg",
 			repoName: "jill/valentine",
-			opts: &ViewOptions{
+			opts: &SecretOptions{
 				RepoArg: "jill/valentine",
 			},
 			stdoutTTY: true,
@@ -197,7 +197,7 @@ func Test_ViewRun(t *testing.T) {
 
 
 
-				View this repository on GitHub: https://github.com/jill/valentine
+				Secret this repository on GitHub: https://github.com/jill/valentine
 			`),
 		},
 		{
@@ -212,13 +212,13 @@ func Test_ViewRun(t *testing.T) {
 
 
 
-				View this repository on GitHub: https://github.com/OWNER/REPO
+				Secret this repository on GitHub: https://github.com/OWNER/REPO
 			`),
 		},
 	}
 	for _, tt := range tests {
 		if tt.opts == nil {
-			tt.opts = &ViewOptions{}
+			tt.opts = &SecretOptions{}
 		}
 
 		if tt.repoName == "" {
@@ -254,8 +254,8 @@ func Test_ViewRun(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			io.SetStdoutTTY(tt.stdoutTTY)
 
-			if err := viewRun(tt.opts); (err != nil) != tt.wantErr {
-				t.Errorf("viewRun() error = %v, wantErr %v", err, tt.wantErr)
+			if err := secretRun(tt.opts); (err != nil) != tt.wantErr {
+				t.Errorf("secretRun() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			assert.Equal(t, tt.wantStderr, stderr.String())
 			assert.Equal(t, tt.wantOut, stdout.String())
@@ -264,7 +264,7 @@ func Test_ViewRun(t *testing.T) {
 	}
 }
 
-func Test_ViewRun_NonMarkdownReadme(t *testing.T) {
+func Test_SecretRun_NonMarkdownReadme(t *testing.T) {
 	tests := []struct {
 		name      string
 		stdoutTTY bool
@@ -278,7 +278,7 @@ func Test_ViewRun_NonMarkdownReadme(t *testing.T) {
 
 			# truly cool readme check it out
 
-			View this repository on GitHub: https://github.com/OWNER/REPO
+			Secret this repository on GitHub: https://github.com/OWNER/REPO
 			`),
 			stdoutTTY: true,
 		},
@@ -308,7 +308,7 @@ func Test_ViewRun_NonMarkdownReadme(t *testing.T) {
 		{ "name": "readme.org",
 		"content": "IyB0cnVseSBjb29sIHJlYWRtZSBjaGVjayBpdCBvdXQ="}`))
 
-		opts := &ViewOptions{
+		opts := &SecretOptions{
 			HttpClient: func() (*http.Client, error) {
 				return &http.Client{Transport: reg}, nil
 			},
@@ -324,8 +324,8 @@ func Test_ViewRun_NonMarkdownReadme(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			io.SetStdoutTTY(tt.stdoutTTY)
 
-			if err := viewRun(opts); err != nil {
-				t.Errorf("viewRun() error = %v", err)
+			if err := secretRun(opts); err != nil {
+				t.Errorf("secretRun() error = %v", err)
 			}
 			assert.Equal(t, tt.wantOut, stdout.String())
 			assert.Equal(t, "", stderr.String())
@@ -334,7 +334,7 @@ func Test_ViewRun_NonMarkdownReadme(t *testing.T) {
 	}
 }
 
-func Test_ViewRun_NoReadme(t *testing.T) {
+func Test_SecretRun_NoReadme(t *testing.T) {
 	tests := []struct {
 		name      string
 		stdoutTTY bool
@@ -348,7 +348,7 @@ func Test_ViewRun_NoReadme(t *testing.T) {
 
 			This repository does not have a README
 
-			View this repository on GitHub: https://github.com/OWNER/REPO
+			Secret this repository on GitHub: https://github.com/OWNER/REPO
 			`),
 			stdoutTTY: true,
 		},
@@ -374,7 +374,7 @@ func Test_ViewRun_NoReadme(t *testing.T) {
 			httpmock.REST("GET", "repos/OWNER/REPO/readme"),
 			httpmock.StatusStringResponse(404, `{}`))
 
-		opts := &ViewOptions{
+		opts := &SecretOptions{
 			HttpClient: func() (*http.Client, error) {
 				return &http.Client{Transport: reg}, nil
 			},
@@ -390,8 +390,8 @@ func Test_ViewRun_NoReadme(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			io.SetStdoutTTY(tt.stdoutTTY)
 
-			if err := viewRun(opts); err != nil {
-				t.Errorf("viewRun() error = %v", err)
+			if err := secretRun(opts); err != nil {
+				t.Errorf("secretRun() error = %v", err)
 			}
 			assert.Equal(t, tt.wantOut, stdout.String())
 			assert.Equal(t, "", stderr.String())
@@ -400,7 +400,7 @@ func Test_ViewRun_NoReadme(t *testing.T) {
 	}
 }
 
-func Test_ViewRun_NoDescription(t *testing.T) {
+func Test_SecretRun_NoDescription(t *testing.T) {
 	tests := []struct {
 		name      string
 		stdoutTTY bool
@@ -414,7 +414,7 @@ func Test_ViewRun_NoDescription(t *testing.T) {
 
 			# truly cool readme check it out
 
-			View this repository on GitHub: https://github.com/OWNER/REPO
+			Secret this repository on GitHub: https://github.com/OWNER/REPO
 			`),
 			stdoutTTY: true,
 		},
@@ -444,7 +444,7 @@ func Test_ViewRun_NoDescription(t *testing.T) {
 		{ "name": "readme.org",
 		"content": "IyB0cnVseSBjb29sIHJlYWRtZSBjaGVjayBpdCBvdXQ="}`))
 
-		opts := &ViewOptions{
+		opts := &SecretOptions{
 			HttpClient: func() (*http.Client, error) {
 				return &http.Client{Transport: reg}, nil
 			},
@@ -460,8 +460,8 @@ func Test_ViewRun_NoDescription(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			io.SetStdoutTTY(tt.stdoutTTY)
 
-			if err := viewRun(opts); err != nil {
-				t.Errorf("viewRun() error = %v", err)
+			if err := secretRun(opts); err != nil {
+				t.Errorf("secretRun() error = %v", err)
 			}
 			assert.Equal(t, tt.wantOut, stdout.String())
 			assert.Equal(t, "", stderr.String())
@@ -470,12 +470,12 @@ func Test_ViewRun_NoDescription(t *testing.T) {
 	}
 }
 
-func Test_ViewRun_WithoutUsername(t *testing.T) {
+func Test_SecretRun_WithoutUsername(t *testing.T) {
 	reg := &httpmock.Registry{}
 	reg.Register(
 		httpmock.GraphQL(`query UserCurrent\b`),
 		httpmock.StringResponse(`
-		{ "data": { "viewer": {
+		{ "data": { "secreter": {
 			"login": "OWNER"
 		}}}`))
 	reg.Register(
@@ -494,7 +494,7 @@ func Test_ViewRun_WithoutUsername(t *testing.T) {
 	io, _, stdout, stderr := iostreams.Test()
 	io.SetStdoutTTY(false)
 
-	opts := &ViewOptions{
+	opts := &SecretOptions{
 		RepoArg: "REPO",
 		HttpClient: func() (*http.Client, error) {
 			return &http.Client{Transport: reg}, nil
@@ -502,8 +502,8 @@ func Test_ViewRun_WithoutUsername(t *testing.T) {
 		IO: io,
 	}
 
-	if err := viewRun(opts); err != nil {
-		t.Errorf("viewRun() error = %v", err)
+	if err := secretRun(opts); err != nil {
+		t.Errorf("secretRun() error = %v", err)
 	}
 
 	assert.Equal(t, heredoc.Doc(`
